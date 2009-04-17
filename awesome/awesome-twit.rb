@@ -78,7 +78,8 @@ while true
       response = http.request(req)
       if response.code != "200"
         puts "Error fetching document (#{response.code})"
-        exit 1
+        sleep 90
+        next
       end
       doc = Document.new response.body
       status = XPath.first(doc, '/statuses/status')
