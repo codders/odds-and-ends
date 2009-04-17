@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Handy script to mount a crypto volume
+
+MOUNT=$1
+MOUNT=`echo "$MOUNT" | sed -e 's/\/$//'`
+
+if [ "x$1" == "x" ]; then
+  echo "Specify the mountpoint"
+  exit 1
+fi
+
+PART=`basename $MOUNT`
+echo "Mounting $PART crypto partition"
+
+if [ `cat /proc/mounts | grep ${MOUNT} | wc -l` -gt 0 ]; then
+  echo "Filesystem ${PART} already mounted. Unmount it first"
+  exit 1
+fi
+
+if [ -b /dev/mapper/${PART}map ]; then
+  sudo /sbin/cryptsetup remove ${PART}map
+fi
+sudo /sbin/cryptsetup create ${PART}map /dev/vg/${PART}
+sudo /bin/mount /dev/mapper/${PART}map ${MOUNT}

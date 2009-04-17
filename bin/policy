@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Sets up a VPN tunnel
+# Expects you to have created a configuration file .vpn whose contents:
+# VPNHOST=123.123.123.123 <- The VPN tunnel end point
+# REMOTE_NETWORK=172.172.172.0 <- The subnet (/24) to which you'd like 
+#                                 to be connected on the remote side
+
+function readconf {
+  sed -ne "s/^$1=//p" ~/.vpn 
+}
+
+IFACE=$1
+if [ "x$IFACE" == "x" ]; then
+  IFACE=`/sbin/route -n | awk '/^0.0.0.0/ { print $8 }'`
+fi
+
+VPNHOST=$(readconf "VPNHOST")
+REMOTE_NETWORK=$(readconf "REMOTE_NETWORK")
+
+ADDR=`ifconfig $IFACE | grep inet | cut -d: -f2 | cut -d\  -f1`
+
+cat <<END | setkey -c
+flush;
+spdflush;
+spdadd ${ADDR}/32 ${REMOTE_NETWORK}/24 any -P out ipsec
+        esp/tunnel/${ADDR}-${VPNHOST}/require;
+
+spdadd ${REMOTE_NETWORK}/24 ${ADDR}/32 any -P in ipsec
+        esp/tunnel/${VPNHOST}-${ADDR}/require;
+
+END
+

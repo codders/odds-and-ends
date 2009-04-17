@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Handy script to unmount a crypto volume
+
+MOUNT=$1
+MOUNT=`echo "$MOUNT" | sed -e 's/\/$//'`
+
+if [ "x$1" == "x" ]; then
+  echo "Specify the mountpoint"
+  exit 1
+fi
+
+PART=`basename $MOUNT`
+echo "Unmounting $PART crypto partition"
+
+if [ `cat /proc/mounts | grep ${MOUNT} | wc -l` -eq 0 ]; then
+  echo "Filesystem ${PART} not mounted. Will just remove mapping"
+else
+  sudo /bin/umount ${MOUNT}
+fi
+
+if [ -b /dev/mapper/${PART}map ]; then
+  sudo /sbin/cryptsetup remove ${PART}map
+else
+  echo "Not currently mapped. Not bothering to unmap"
+fi
