@@ -39,9 +39,9 @@ function exitstatus {
 
     if [ "${EXITSTATUS}" -eq 0 ]
     then
-       PS1="${PROMPT} ${BOLD}${GREEN}[${EXITSTATUS}]${OFF}\$ "
+       PS1="${BOLD}${GREEN}[${EXITSTATUS}]${OFF}${PROMPT}\$ "
     else
-       PS1="${PROMPT} ${BOLD}${RED}[${EXITSTATUS}]${OFF}\$ "
+       PS1="${BOLD}${RED}[${EXITSTATUS}]${OFF}${PROMPT}\$ "
     fi
 
     PS2="${BOLD}>${OFF} "
