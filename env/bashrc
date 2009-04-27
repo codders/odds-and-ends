@@ -35,7 +35,7 @@ function exitstatus {
     YELLOW="\[\e[33;1m\]"
     OFF="\[\033[m\]"
 
-    PROMPT="${YELLOW}\u@\h:${BLUE}\W${OFF}"
+    PROMPT="${YELLOW}\u@\h:${BLUE}\w${OFF}"
 
     if [ "${EXITSTATUS}" -eq 0 ]
     then
