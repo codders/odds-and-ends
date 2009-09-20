@@ -3,6 +3,9 @@
 require 'net/http'
 require 'yaml'
 require 'rexml/document'
+require 'rubygems'
+require 'oauth'
+require 'oauth/consumer'
 require 'builder'
 include REXML
 
@@ -28,6 +31,7 @@ end
 
 def write_to_pipe(command, data)
   f = IO.popen(command, "w")
+  puts data
   printed = awesome_print(data)
   f.write(awesome_print(data))
   f.close()
@@ -40,8 +44,8 @@ def write_config(config)
 end
 
 if not File.exists?(CONFIGFILE)
-  config_obj = { "username" => "SETME",
-                 "password" => "SETME" }
+  config_obj = { "consumer_key" => "SETME",
+                 "consumer_secret" => "SETME" }
   write_config(config_obj)
   puts "Please edit config file #{CONFIGFILE}"
   exit 1
@@ -49,13 +53,13 @@ end
 
 config = YAML.load_file(CONFIGFILE)
 
-if not config.has_key?("username")
-  puts "Please add a username to the config file"
+if not config.has_key?("consumer_key")
+  puts "Please add a consumer key to the config file"
   exit 1
 end
 
-if not config.has_key?("password")
-  puts "Please add a password to the config file"
+if not config.has_key?("consumer_secret")
+  puts "Please add a consumer secret to the config file"
   exit 1
 end
 
@@ -70,17 +74,30 @@ if File.exists?(PIDFILE)
 end
 write_file_contents(PIDFILE, "#{$$}\n")
 
+consumer = OAuth::Consumer.new(config["consumer_key"], config["consumer_secret"], { :site => "http://twitter.com" } )
+if !config.has_key?("access_token")
+  puts "No access token defined. Requesting..."
+  request_token = consumer.get_request_token
+  puts "Please visit #{request_token.authorize_url}"
+  puts "... and enter the PIN provided:"
+  pin = gets.chomp
+  access_token = request_token.get_access_token(:oauth_verifier => pin)
+  puts "Saving access token"
+  config["access_token"] = access_token.token
+  config["access_secret"] = access_token.secret
+  write_config(config)
+else
+  puts "Using saved access token"
+  access_token = OAuth::AccessToken.from_hash(consumer, { :oauth_token => config["access_token"], :oauth_token_secret => config["access_secret"] })
+end
+puts "Token: #{access_token.token} Secret: #{access_token.secret}"
+
 while true
   begin
-    Net::HTTP.start('twitter.com') do |http|
-      req = Net::HTTP::Get.new('/statuses/friends_timeline.xml')
-      req.basic_auth config["username"], config["password"]
-      response = http.request(req)
-      if response.code != "200"
-        puts "Error fetching document (#{response.code})"
-        sleep 90
-        next
-      end
+    response = access_token.get('/statuses/friends_timeline.xml')
+    if response.code != "200"
+      puts "Error fetching document (#{response.code})"
+    else
       doc = Document.new response.body
       status = XPath.first(doc, '/statuses/status')
       user = XPath.first(status, 'user/screen_name').text
@@ -93,9 +110,9 @@ while true
       write_config(config) 
     end
   rescue
-     puts "Error reading from network"
-     sleep 90
-     retry
+    puts "Error reading from network"
+    sleep 90
+    retry
   end
   sleep 90
 end
