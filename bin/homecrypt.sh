@@ -1,10 +1,11 @@
-#!/bin/bash -e
-# To mount home directory from a pendrive configured with a crypto LVM home partition
-DEVICE=/dev/sdb
+#!/bin/sh -e
+DEV=/dev/sdb
+DEVALIAS=mypen
 if [ "x$1" != "x" ]; then
-  DEVICE=$1
+  DEV=$1
 fi
-cryptsetup luksOpen $DEVICE mypen
+cryptsetup luksOpen $DEV $DEVALIAS
 pvscan
-vgchange -a y
+vgchange -a y cryptvg
 mount /dev/cryptvg/home /home
+mount /dev/cryptvg/grab /var/grab
