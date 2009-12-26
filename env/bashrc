@@ -25,6 +25,16 @@ if [ -z "$debian_chroot" -a -r /etc/debian_chroot ]; then
     debian_chroot=$(cat /etc/debian_chroot)
 fi
 
+source ~/.git_completion.sh
+
+function parse_git_dirty {
+  [[ $(git status 2> /dev/null | tail -n1) != "nothing to commit (working directory clean)" ]] && echo "*"
+}
+
+function parse_git_branch {
+  git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e "s/* \(.*\)/[\1$(parse_git_dirty)]/"
+}
+
 function exitstatus {
 
     EXITSTATUS="$?"
@@ -35,7 +45,9 @@ function exitstatus {
     YELLOW="\[\e[33;1m\]"
     OFF="\[\033[m\]"
 
-    PROMPT="${YELLOW}\u@\h:${BLUE}\w${OFF}"
+    DIRTY=$(parse_git_dirty)
+    GITNESS=$(__git_ps1 "${GREEN}%s${DIRTY}${OFF} ")
+    PROMPT="${YELLOW}\u@\h:${BLUE}\w${OFF} ${GITNESS}"
 
     if [ "${EXITSTATUS}" -eq 0 ]
     then
@@ -57,3 +69,8 @@ PROMPT_COMMAND=exitstatus
 if [ -f /etc/bash_completion ]; then
     . /etc/bash_completion
 fi
+
+alias dedict='dict -d deu-eng'
+
+export LESS="-R"
+
