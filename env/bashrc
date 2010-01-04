@@ -16,8 +16,6 @@ shopt -s checkwinsize
 if [ "$TERM" != "dumb" ]; then
     eval "`dircolors -b`"
     alias ls='ls --color=auto'
-    #alias dir='ls --color=auto --format=vertical'
-    #alias vdir='ls --color=auto --format=long'
 fi
 
 # set variable identifying the chroot you work in (used in the prompt below)
@@ -47,7 +45,12 @@ function exitstatus {
 
     DIRTY=$(parse_git_dirty)
     GITNESS=$(__git_ps1 "${GREEN}%s${DIRTY}${OFF} ")
-    PROMPT="${YELLOW}\u@\h:${BLUE}\w${OFF} ${GITNESS}"
+    if [ $UID == 0 ]; then
+      USER_PART="${RED}\u${OFF}${YELLOW}"
+    else
+      USER_PART="${YELLOW}\u"
+    fi
+    PROMPT="${USER_PART}@\h:${BLUE}\w${OFF} ${GITNESS}"
 
     if [ "${EXITSTATUS}" -eq 0 ]
     then
@@ -60,8 +63,6 @@ function exitstatus {
 }
 
 PROMPT_COMMAND=exitstatus
-
-#source /etc/profile
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profiles
