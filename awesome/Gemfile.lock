@@ -1,12 +1,12 @@
 GEM
-  remote: http://rubygems.org/
+  remote: https://rubygems.org/
   specs:
-    builder (3.0.0)
+    json (1.8.1)
     oauth (0.4.6)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  builder
+  json
   oauth

@@ -6,8 +6,7 @@ require 'rexml/document'
 require 'rubygems'
 require 'oauth'
 require 'oauth/consumer'
-require 'builder'
-include REXML
+require 'json'
 
 PIDFILE = "#{ENV['HOME']}/var/run/awesome_twit.pid"
 CONFIGFILE="#{ENV['HOME']}/.twit"
@@ -26,7 +25,7 @@ def write_file_contents(filename, data)
 end
 
 def awesome_print(data)
-  return "mychatbox.text='#{data.to_xs.gsub(/'/, "&apos;")}'\n"
+  "mychatbox.text='#{data.split("\n").join(" ").gsub(/&/, "&amp;").gsub(/'/, "&apos;").gsub(/</, "&lt;").gsub(/>/, "&gt;").gsub(/"/, "&quot;")}'\n"
 end
 
 def write_to_pipe(command, data)
@@ -52,6 +51,10 @@ if not File.exists?(CONFIGFILE)
 end
 
 config = YAML.load_file(CONFIGFILE)
+if not config
+  puts "Config file invalid"
+  exit 1
+end
 
 if not config.has_key?("consumer_key")
   puts "Please add a consumer key to the config file"
@@ -74,43 +77,31 @@ if File.exists?(PIDFILE)
 end
 write_file_contents(PIDFILE, "#{$$}\n")
 
-consumer = OAuth::Consumer.new(config["consumer_key"], config["consumer_secret"], { :site => "http://twitter.com" } )
-if !config.has_key?("access_token")
-  puts "No access token defined. Requesting..."
-  request_token = consumer.get_request_token
-  puts "Please visit #{request_token.authorize_url}"
-  puts "... and enter the PIN provided:"
-  pin = gets.chomp
-  access_token = request_token.get_access_token(:oauth_verifier => pin)
-  puts "Saving access token"
-  config["access_token"] = access_token.token
-  config["access_secret"] = access_token.secret
-  write_config(config)
-else
-  puts "Using saved access token"
-  access_token = OAuth::AccessToken.from_hash(consumer, { :oauth_token => config["access_token"], :oauth_token_secret => config["access_secret"] })
-end
+consumer = OAuth::Consumer.new(config["consumer_key"], config["consumer_secret"], { :site => "https://api.twitter.com", :scheme => :header } )
+token_hash = { :oauth_token => config["access_token"],
+               :oauth_token_secret => config["access_secret"] }
+access_token = OAuth::AccessToken.from_hash(consumer, token_hash )
 puts "Token: #{access_token.token} Secret: #{access_token.secret}"
 
 while true
   begin
-    response = access_token.get('/statuses/friends_timeline.xml')
+    response = access_token.request(:get, "/1.1/statuses/home_timeline.json")
     if response.code != "200"
       puts "Error fetching document (#{response.code})"
     else
-      doc = Document.new response.body
-      status = XPath.first(doc, '/statuses/status')
-      user = XPath.first(status, 'user/screen_name').text
-      text = XPath.first(status, 'text').text
-      id = XPath.first(status, 'id').text
+      tweets = JSON.parse(response.body)
+      tweet = tweets.first
+      user = tweet["user"]["screen_name"]
+      text = tweet["text"]
+      id = tweet["id"]
       if not config.has_key?("last_id") or config["last_id"] != id
         write_to_pipe("awesome-client", "<#{user}> #{text}")
+        config["last_id"] = id
+        write_config(config) 
       end
-      config["last_id"] = id
-      write_config(config) 
     end
-  rescue
-    puts "Error reading from network"
+  rescue => e
+    puts "Error reading from network: #{e}"
     sleep 90
     retry
   end

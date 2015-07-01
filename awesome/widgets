@@ -1,0 +1,3 @@
+#!/bin/sh
+HERE=`dirname $0`
+$HERE/awesome-twit.rb & $HERE/awesome-battery.rb
