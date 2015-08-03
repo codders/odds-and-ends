@@ -1,0 +1,59 @@
+--- /etc/xdg/awesome/rc.lua	2015-06-05 08:28:42.000000000 +0200
++++ /home/at/.config/awesome/rc.lua	2015-08-03 09:42:11.085005867 +0200
+@@ -58,7 +58,6 @@
+ -- Table of layouts to cover with awful.layout.inc, order matters.
+ local layouts =
+ {
+-    awful.layout.suit.floating,
+     awful.layout.suit.tile,
+     awful.layout.suit.tile.left,
+     awful.layout.suit.tile.bottom,
+@@ -69,7 +68,8 @@
+     awful.layout.suit.spiral.dwindle,
+     awful.layout.suit.max,
+     awful.layout.suit.max.fullscreen,
+-    awful.layout.suit.magnifier
++    awful.layout.suit.magnifier,
++    awful.layout.suit.floating
+ }
+ -- }}}
+ 
+@@ -115,9 +115,17 @@
+ -- {{{ Wibox
+ -- Create a textclock widget
+ mytextclock = awful.widget.textclock()
++-- Create a textbox widget
++mychatbox = wibox.widget.textbox()
++mybatterybox = wibox.widget.textbox()
++-- Set the default text in textbox
++mychatbox:set_markup("<b><small> Chat goes here </small></b>")
++mybatterybox:set_markup("<b><small>Battery</small></b>")
++
+ 
+ -- Create a wibox for each screen and add it
+ mywibox = {}
++mywibox2 = {}
+ mypromptbox = {}
+ mylayoutbox = {}
+ mytaglist = {}
+@@ -185,6 +193,7 @@
+ 
+     -- Create the wibox
+     mywibox[s] = awful.wibox({ position = "top", screen = s })
++    mywibox2[s] = awful.wibox({ position = "bottom", screen = s})
+ 
+     -- Widgets that are aligned to the left
+     local left_layout = wibox.layout.fixed.horizontal()
+@@ -205,6 +214,12 @@
+     layout:set_right(right_layout)
+ 
+     mywibox[s]:set_widget(layout)
++
++    local layout2 = wibox.layout.align.horizontal()
++    layout2:set_left(mybatterybox)
++    layout2:set_right(mychatbox)
++
++    mywibox2[s]:set_widget(layout2)
+ end
+ -- }}}
+ 
